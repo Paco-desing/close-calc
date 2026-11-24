@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Closets</title>
+<style>
+:root {
+  --bg:#f4f4f5; --surf:#fff; --brd:#ddd; --txt:#1a1a1a; --txt2:#666;
+  --acc:#2563eb; --acc2:#1d4ed8; --warn-bg:#fff7ed; --warn-brd:#fed7aa;
+  --warn-txt:#9a3412; --err-bg:#fef2f2; --err-brd:#fecaca; --err-txt:#991b1b;
+  --radius:6px; --h-input:44px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme=light]){
+    --bg:#111; --surf:#1e1e1e; --brd:#333; --txt:#f0f0f0; --txt2:#999;
+    --warn-bg:#422006; --warn-brd:#9a3412; --warn-txt:#fed7aa;
+    --err-bg:#450a0a; --err-brd:#991b1b; --err-txt:#fecaca;
+  }
+}
+:root[data-theme=dark]{
+  --bg:#111; --surf:#1e1e1e; --brd:#333; --txt:#f0f0f0; --txt2:#999;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);font-size:15px;line-height:1.5}
+
+/* ── APP GRID ── */
+#app{display:grid;height:100vh;overflow:hidden;
+  grid-template-areas:"hd hd hd" "inp res drw" "tls tls tls";
+  grid-template-columns:300px 360px 1fr;
+  grid-template-rows:auto 1fr auto}
+@media(min-width:600px) and (max-width:1099px){
+  #app{grid-template-areas:"hd hd" "inp drw" "res drw" "tls tls";
+       grid-template-columns:290px 1fr;grid-template-rows:auto 1fr 1fr auto;height:auto;overflow:visible}
+}
+@media(max-width:599px){
+  #app{grid-template-areas:"hd" "inp" "res" "drw" "tls";
+       grid-template-columns:1fr;height:auto;overflow:visible}
+}
+
+/* ── PANELS ── */
+header{grid-area:hd;background:var(--acc);color:#fff;padding:10px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:20;box-shadow:0 2px 4px rgba(0,0,0,.2)}
+header h1{font-size:1rem;font-weight:700}
+header small{font-size:.7rem;opacity:.85;display:block;margin-top:1px}
+#inp-panel{grid-area:inp;background:var(--surf);border-right:1px solid var(--brd);overflow-y:auto;padding:12px}
+#res-panel{grid-area:res;background:var(--surf);border-right:1px solid var(--brd);overflow-y:auto;padding:12px}
+#drw-panel{grid-area:drw;background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
+#tls-panel{grid-area:tls;background:var(--surf);border-top:1px solid var(--brd);padding:12px}
+@media(max-width:599px){
+  #inp-panel,#res-panel{border-right:none;border-bottom:1px solid var(--brd);overflow-y:visible;padding:0}
+  #drw-panel{overflow:visible}
+  #tls-panel{padding:0}
+}
+
+/* ── SECTION HEADINGS ── */
+.sh{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--txt2);border-bottom:1px solid var(--brd);padding-bottom:3px;margin:14px 0 8px}
+.sh:first-child{margin-top:0}
+
+/* ── FORM ── */
+.field{margin-bottom:9px}
+label{display:block;font-size:.78rem;font-weight:500;color:var(--txt2);margin-bottom:3px}
+input[type=text],input[type=number],select{
+  width:100%;height:var(--h-input);padding:8px 10px;border:1px solid var(--brd);
+  border-radius:var(--radius);background:var(--bg);color:var(--txt);font-size:.92rem;
+  transition:border-color .15s}
+input:focus,select:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 2px rgba(37,99,235,.18)}
+.radio-grp{display:flex;gap:10px;flex-wrap:wrap}
+.radio-grp label{display:flex;align-items:center;gap:5px;font-size:.82rem;color:var(--txt);cursor:pointer;white-space:nowrap}
+.flex-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.flex-row .field{flex:1;min-width:110px;margin-bottom:0}
+.cbk-row{display:flex;flex-direction:column;gap:5px;font-size:.82rem}
+.cbk-row label{display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--txt)}
+
+/* ── BUTTONS ── */
+button{display:inline-flex;align-items:center;justify-content:center;
+  height:36px;padding:0 13px;border-radius:var(--radius);font-size:.82rem;
+  font-weight:600;cursor:pointer;border:1px solid var(--brd);
+  background:var(--surf);color:var(--txt);transition:background .15s;white-space:nowrap}
+button:hover{background:var(--brd)}
+button.pri{background:var(--acc);color:#fff;border-color:var(--acc2)}
+button.pri:hover{background:var(--acc2)}
+button.sm{height:30px;font-size:.75rem;padding:0 10px}
+button.xs{height:26px;font-size:.7rem;padding:0 7px}
+
+/* ── SECTION TYPE ROWS ── */
+.sec-row{background:var(--bg);border:1px solid var(--brd);border-radius:var(--radius);
+  padding:7px 10px;margin-bottom:6px}
+.sec-row-top{display:flex;align-items:center;gap:8px}
+.sec-row-top span{font-size:.78rem;font-weight:700;white-space:nowrap}
+.sec-row-top select{flex:1;height:36px;font-size:.78rem}
+.sec-extra{margin-top:6px;padding-top:6px;border-top:1px solid var(--brd);
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.75rem}
+.sec-extra label{font-size:.75rem;white-space:nowrap;color:var(--txt2)}
+.sec-extra input,.sec-extra select{height:30px;font-size:.75rem}
+
+/* ── RESULTS ── */
+.r-block{background:var(--bg);border:1px solid var(--brd);border-radius:var(--radius);
+  padding:9px 11px;margin-bottom:9px}
+.r-block h3{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--txt2);margin-bottom:6px}
+.dr{display:flex;justify-content:space-between;align-items:center;
+  padding:3px 0;border-bottom:1px solid var(--brd);gap:4px}
+.dr:last-child{border-bottom:none}
+.dl{font-size:.78rem;color:var(--txt2);flex-shrink:0}
+.dv{font-family:monospace;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:5px;flex-wrap:wrap;text-align:right}
+.dmm{font-size:.7rem;color:var(--txt2)}
+.cpbtn{background:none;border:none;cursor:pointer;color:var(--acc);
+  font-size:.7rem;padding:1px 4px;height:auto;border-radius:3px}
+.cpbtn:hover{background:var(--brd)}
+.steps{font-family:monospace;font-size:.75rem;background:var(--bg);border:1px solid var(--brd);
+  border-radius:var(--radius);padding:7px 10px;white-space:pre-wrap;color:var(--txt2);line-height:1.6}
+.warn{background:var(--warn-bg);border:1px solid var(--warn-brd);border-radius:var(--radius);
+  padding:6px 10px;margin-bottom:6px;font-size:.78rem;color:var(--warn-txt)}
+.err{background:var(--err-bg);border:1px solid var(--err-brd);color:var(--err-txt)}
+
+/* ── CUT LIST ── */
+.cut-tbl{width:100%;border-collapse:collapse;font-size:.72rem}
+.cut-tbl th{background:var(--brd);padding:4px 5px;text-align:left;font-weight:700;white-space:nowrap}
+.cut-tbl td{padding:3px 5px;border-bottom:1px solid var(--brd);white-space:nowrap}
+.cut-tbl tr:last-child td{border-bottom:none}
+.cut-tbl tbody tr:hover td{background:var(--surf)}
+
+/* ── DRAWING PANEL ── */
+.drw-bar{display:flex;gap:6px;padding:7px 10px;background:var(--surf);
+  border-bottom:1px solid var(--brd);flex-wrap:wrap}
+#svg-wrap{flex:1;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:10px}
+#svg-wrap .lbl{font-size:.7rem;color:var(--txt2);text-align:center;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.svg-box{overflow:auto;border:1px solid var(--brd);border-radius:var(--radius);background:#fff}
+.svg-box svg{display:block}
+
+/* ── TOOLS ── */
+.t-tabs{display:flex;gap:2px;border-bottom:2px solid var(--brd);margin-bottom:10px}
+.t-tabs button{background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;
+  padding:5px 12px;font-size:.82rem;color:var(--txt2);border-radius:0;height:auto}
+.t-tabs button.on{color:var(--acc);border-bottom-color:var(--acc);font-weight:700}
+.tp{display:none}
+.tp.on{display:block}
+.conv-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.conv-row .field{flex:1;min-width:110px;margin-bottom:0}
+.frac-tbl{width:100%;border-collapse:collapse;font-size:.78rem}
+.frac-tbl th{background:var(--brd);padding:4px 10px;text-align:center;font-weight:700}
+.frac-tbl td{padding:3px 10px;border-bottom:1px solid var(--brd);text-align:center;font-family:monospace}
+.add-row{display:flex;gap:6px;align-items:center;margin-bottom:5px}
+.add-row input{flex:1;height:36px;font-size:.88rem}
+.add-op{font-size:1rem;font-weight:700;width:18px;color:var(--acc);flex-shrink:0;text-align:center}
+
+/* ── MOBILE ACCORDION ── */
+.acc-btn{display:none}
+@media(max-width:599px){
+  .acc-btn{display:flex;width:100%;justify-content:space-between;align-items:center;
+    background:var(--surf);color:var(--txt);border:none;border-bottom:1px solid var(--brd);
+    padding:12px 16px;font-size:.92rem;font-weight:700;cursor:pointer;height:auto;border-radius:0}
+  .acc-btn .ic{transition:transform .2s}
+  .acc-btn.open .ic{transform:rotate(180deg)}
+  .acc-body{display:none;padding:12px}
+  .acc-body.open{display:block}
+  #tls-panel .acc-body{padding:12px}
+  #drw-panel .acc-body{padding:0}
+}
+@media(min-width:600px){.acc-btn{display:none!important}.acc-body{display:block!important;padding:0}}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%) translateY(10px);
+  background:#222;color:#fff;padding:7px 16px;border-radius:20px;font-size:.82rem;
+  opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:999;white-space:nowrap}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── SCROLLBARS ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--brd);border-radius:3px}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div id="app">
+
+<!-- HEADER -->
+<header>
+  <div>
+    <h1>Calculadora de Closets &mdash; California / JL Style</h1>
+    <small>Medidas exactas para CAD &nbsp;·&nbsp; pies-pulgadas ↔ mm</small>
+  </div>
+  <div style="display:flex;gap:6px">
+    <button class="sm" onclick="resetDefaults()">↺ Reset</button>
+  </div>
+</header>
+
+<!-- INPUTS -->
+<div id="inp-panel">
+  <button class="acc-btn" onclick="accToggle(this,'acc-inp')">Entradas <span class="ic">▼</span></button>
+  <div class="acc-body open" id="acc-inp">
+
+    <div class="sh">Dimensiones del hueco (opening)</div>
+    <div class="field"><label>Ancho (width) — ej: 96 / 8' / 8' 2 3/8" / 2500mm</label>
+      <input type="text" id="iW" value="96" inputmode="decimal" oninput="onChange()"></div>
+    <div class="field"><label>Alto piso→techo (floor to ceiling)</label>
+      <input type="text" id="iH" value="96" inputmode="decimal" oninput="onChange()"></div>
+    <div class="field"><label>Profundidad del sistema (depth, default 14")</label>
+      <input type="text" id="iD" value="14" inputmode="decimal" oninput="onChange()"></div>
+
+    <div class="sh">Materiales</div>
+    <div class="field"><label>Espesor de panel (panel thickness, default 3/4")</label>
+      <input type="text" id="iT" value="3/4" inputmode="decimal" oninput="onChange()"></div>
+
+    <div class="sh">Montaje (installation)</div>
+    <div class="radio-grp field">
+      <label><input type="radio" name="mnt" value="floor" checked onchange="onChange()"> Con zócalo/toe kick (3½")</label>
+      <label><input type="radio" name="mnt" value="wall" onchange="onChange()"> Riel de pared (wall rail)</label>
+    </div>
+
+    <div class="sh">Alto del sistema (system height)</div>
+    <div class="flex-row" style="margin-bottom:8px">
+      <div class="field"><label>Alto del sistema (default 84")</label>
+        <input type="text" id="iSH" value="84" inputmode="decimal" oninput="onChange()"></div>
+      <div style="display:flex;align-items:flex-end;padding-bottom:0">
+        <label style="display:flex;align-items:center;gap:5px;font-size:.8rem;cursor:pointer;white-space:nowrap">
+          <input type="checkbox" id="iCeil" onchange="onChange()"> Hasta el techo</label>
+      </div>
+    </div>
+
+    <div class="sh">Separación entre estantes (shelf spacing)</div>
+    <div class="flex-row" style="margin-bottom:8px">
+      <div class="field"><label>Estantes / shelves (default 11")</label>
+        <input type="text" id="iSS" value="11" inputmode="decimal" oninput="onChange()"></div>
+      <div class="field"><label>Zapatero / shoe rack (default 8")</label>
+        <input type="text" id="iZS" value="8" inputmode="decimal" oninput="onChange()"></div>
+    </div>
+
+    <div class="sh">Secciones (sections)</div>
+    <div class="flex-row" style="margin-bottom:4px">
+      <div class="field"><label>Cantidad de secciones</label>
+        <input type="number" id="iN" value="3" min="1" max="20" oninput="onNChange()"></div>
+      <div style="padding-bottom:0">
+        <button onclick="autoSections()" title="Calcular automáticamente (18&quot;–36&quot; c/sección)">Auto</button>
+      </div>
+    </div>
+    <div style="font-size:.7rem;color:var(--txt2);margin-bottom:10px">Auto: ninguna sección &lt;18" ni &gt;36"</div>
+
+    <div class="sh">Tipo por sección (section type)</div>
+    <div id="sec-types"></div>
+
+    <div class="sh">Opciones</div>
+    <div class="cbk-row field">
+      <label><input type="checkbox" id="iTopS" checked onchange="onChange()"> Estante superior corrido (top shelf)</label>
+    </div>
+
+    <div class="sh">Tolerancias (clearances)</div>
+    <div class="field"><label>Juego estante regulable (shelf clearance)</label>
+      <input type="text" id="iSC" value="1/16" inputmode="decimal" oninput="onChange()"></div>
+    <div class="field"><label>Juego guías cajón laterales (drawer side clearance)</label>
+      <input type="text" id="iDSC" value="1" inputmode="decimal" oninput="onChange()"></div>
+    <div class="field"><label>Juego cajón profundidad (drawer depth clearance)</label>
+      <input type="text" id="iDDC" value="2" inputmode="decimal" oninput="onChange()"></div>
+    <div class="field"><label>Espacio libre barra→estante (rod clearance)</label>
+      <input type="text" id="iRC" value="2" inputmode="decimal" oninput="onChange()"></div>
+
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="res-panel">
+  <button class="acc-btn" onclick="accToggle(this,'acc-res')">Resultados <span class="ic">▼</span></button>
+  <div class="acc-body open" id="acc-res">
+    <div id="warns"></div>
+    <div id="summary"></div>
+    <div id="secres"></div>
+    <div class="sh">Lista de corte (cut list)</div>
+    <div id="cutlist"></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+      <button class="sm" onclick="copyCutList()">📋 Copiar lista</button>
+      <button class="sm" onclick="exportCSV()">⬇ CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- DRAWING -->
+<div id="drw-panel">
+  <button class="acc-btn" onclick="accToggle(this,'acc-drw')">Dibujo (Elevation &amp; Plan) <span class="ic">▼</span></button>
+  <div class="acc-body open" id="acc-drw" style="display:flex;flex-direction:column;flex:1">
+    <div class="drw-bar">
+      <button class="sm" onclick="dlSVG('elev')">⬇ SVG Elevation</button>
+      <button class="sm" onclick="dlSVG('plan')">⬇ SVG Plan</button>
+      <button class="sm" onclick="window.print()">🖨 Imprimir</button>
+    </div>
+    <div id="svg-wrap">
+      <div class="lbl">Elevación (Elevation)</div>
+      <div class="svg-box" id="elev-box"></div>
+      <div class="lbl" style="margin-top:8px">Planta (Plan view)</div>
+      <div class="svg-box" id="plan-box"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOOLS -->
+<div id="tls-panel">
+  <button class="acc-btn" onclick="accToggle(this,'acc-tls')">Herramientas extra <span class="ic">▼</span></button>
+  <div class="acc-body" id="acc-tls">
+    <div class="t-tabs">
+      <button class="on" onclick="switchTool('conv',this)">Conversor</button>
+      <button onclick="switchTool('add',this)">Sumadora</button>
+      <button onclick="switchTool('frac',this)">Fracciones</button>
+    </div>
+    <!-- Converter -->
+    <div class="tp on" id="tp-conv">
+      <div class="conv-row">
+        <div class="field"><label>Pulgadas (inches)</label>
+          <input type="text" id="cv-in" placeholder="98.375" oninput="convFrom('in')" inputmode="decimal"></div>
+        <div class="field"><label>Pies-pulgadas (ft-in)</label>
+          <input type="text" id="cv-ft" placeholder="8' 2 3/8&quot;" oninput="convFrom('ft')"></div>
+        <div class="field"><label>Milímetros (mm)</label>
+          <input type="text" id="cv-mm" placeholder="2500" oninput="convFrom('mm')" inputmode="decimal"></div>
+      </div>
+    </div>
+    <!-- Adder -->
+    <div class="tp" id="tp-add">
+      <div style="font-size:.75rem;color:var(--txt2);margin-bottom:7px">Suma/resta de medidas en cualquier formato</div>
+      <div id="addends"></div>
+      <div style="display:flex;gap:6px;margin-top:7px;flex-wrap:wrap">
+        <button class="sm" onclick="addAddend('+')">+ Agregar</button>
+        <button class="sm" onclick="addAddend('-')">− Restar</button>
+        <button class="sm" onclick="clearAdd()">✕ Limpiar</button>
+      </div>
+      <div id="add-res" style="margin-top:9px;font-size:1rem;font-family:monospace;font-weight:700;color:var(--acc)"></div>
+    </div>
+    <!-- Fractions -->
+    <div class="tp" id="tp-frac">
+      <div style="overflow-x:auto">
+        <table class="frac-tbl">
+          <thead><tr><th>Fracción</th><th>Decimal (in)</th><th>mm</th></tr></thead>
+          <tbody id="frac-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<script>
+// ═══════════════════════════════
+// UNIT HELPERS
+// ═══════════════════════════════
+function gcd(a,b){while(b){[a,b]=[b,a%b]}return a}
+function simplify(n,d){if(n===0)return[0,1];const g=gcd(n,d);return[n/g,d/g]}
+
+function parseIn(s){
+  if(s===null||s===undefined)return NaN;
+  s=String(s).trim();
+  if(!s)return NaN;
+  // mm
+  const mm=s.match(/^([\d.]+)\s*mm$/i);
+  if(mm)return parseFloat(mm[1])/25.4;
+  // dash format: 8-2-3/8 or 8-2
+  const dash3=s.match(/^(\d+)-(\d+)-(\d+\/\d+)"?$/);
+  if(dash3)return parseInt(dash3[1])*12+parseInt(dash3[2])+evalFrac(dash3[3]);
+  const dash2=s.match(/^(\d+)-(\d+)"?$/);
+  if(dash2)return parseInt(dash2[1])*12+parseInt(dash2[2]);
+  // feet formats
+  const f1=s.match(/^(\d+)'\s*(\d+)\s+(\d+\/\d+)\s*"?$/); // 8' 2 3/8"
+  if(f1)return parseInt(f1[1])*12+parseInt(f1[2])+evalFrac(f1[3]);
+  const f2=s.match(/^(\d+)'\s*(\d+)\s*"?$/); // 8' 2"
+  if(f2)return parseInt(f2[1])*12+parseFloat(f2[2]);
+  const f3=s.match(/^(\d+)'\s*(\d+\/\d+)\s*"?$/); // 8' 3/8"
+  if(f3)return parseInt(f3[1])*12+evalFrac(f3[2]);
+  const f4=s.match(/^(\d+(?:\.\d+)?)'$/); // 8' or 8.5'
+  if(f4)return parseFloat(f4[1])*12;
+  // inch formats
+  const i1=s.match(/^(\d+)\s+(\d+\/\d+)\s*"?$/); // 2 3/8"
+  if(i1)return parseInt(i1[1])+evalFrac(i1[2]);
+  const i2=s.match(/^(\d+)\/(\d+)\s*"?$/); // 3/8"
+  if(i2)return parseInt(i2[1])/parseInt(i2[2]);
+  const p=parseFloat(s);
+  return isNaN(p)?NaN:p;
+}
+function evalFrac(s){if(!s)return 0;const p=s.split('/');return parseInt(p[0])/parseInt(p[1])}
+
+function toFrac(dec){
+  if(isNaN(dec)||dec===null)return'—';
+  const neg=dec<0;dec=Math.abs(dec);
+  const s16=Math.round(dec*16);
+  const ft=Math.floor(s16/(16*12));
+  const rem=s16%(16*12);
+  const wi=Math.floor(rem/16);
+  const fn=rem%16;
+  const [sn,sd]=simplify(fn,16);
+  let r='';
+  if(ft>0)r+=ft+"' ";
+  r+=wi;
+  if(sn>0)r+=' '+sn+'/'+sd;
+  if(ft>0)r+='"';
+  return(neg?'-':'')+r;
+}
+function toMM(i){return(i*25.4).toFixed(1)}
+function dimRow(inches,label){
+  const f=toFrac(inches),m=toMM(inches);
+  return`<div class="dr"><span class="dl">${label}</span><span class="dv"><span>${f}</span><span class="dmm">${m} mm</span><button class="cpbtn" onclick="cp('${f.replace(/'/g,"\\'")}  (${m} mm)')">📋</button></span></div>`;
+}
+
+// ═══════════════════════════════
+// STATE & DEFAULTS
+// ═══════════════════════════════
+let R={};
+let addRows=[{op:'+',v:''},{op:'+',v:''}];
+
+function gv(id){return(document.getElementById(id)||{}).value||''}
+function gc(id){return!!(document.getElementById(id)||{}).checked}
+function gr(name){return(document.querySelector(`input[name="${name}"]:checked`)||{}).value||''}
+
+const SEC_TYPES=[
+  {id:'double', lbl:'Barra doble (double hang)'},
+  {id:'long',   lbl:'Barra simple / ropa larga (long hang)'},
+  {id:'medium', lbl:'Barra media + estantes (medium hang)'},
+  {id:'shelves',lbl:'Estantes (shelves)'},
+  {id:'shoe',   lbl:'Zapatero (shoe rack)'},
+  {id:'drawers',lbl:'Cajonera (drawers)'},
+  {id:'combo',  lbl:'Cajones abajo + estantes arriba (combo)'},
+];
+
+function getSectionTypes(){
+  return Array.from({length:parseInt(gv('iN'))||1},(_,i)=>(document.getElementById('st-'+i)||{}).value||'shelves');
+}
+function getSecCfg(i){
+  return{
+    drwCount:parseInt((document.getElementById('dc-'+i)||{}).value)||3,
+    drwFH:parseFloat((document.getElementById('dh-'+i)||{}).value)||5,
+  };
+}
+
+// ═══════════════════════════════
+// SECTION TYPE UI
+// ═══════════════════════════════
+function buildSecUI(){
+  const n=Math.min(parseInt(gv('iN'))||1,20);
+  const c=document.getElementById('sec-types');
+  const prev={};
+  c.querySelectorAll('select[id^=st-]').forEach(s=>{prev[parseInt(s.id.slice(3))]=s.value});
+  c.innerHTML='';
+  for(let i=0;i<n;i++){
+    const pv=prev[i]||'shelves';
+    const div=document.createElement('div');
+    div.className='sec-row';
+    div.id='sr-'+i;
+    div.innerHTML=`<div class="sec-row-top">
+      <span>Sec ${i+1}</span>
+      <select id="st-${i}" onchange="onSecType(${i})">
+        ${SEC_TYPES.map(t=>`<option value="${t.id}"${pv===t.id?' selected':''}>${t.lbl}</option>`).join('')}
+      </select></div>
+      <div class="sec-extra" id="se-${i}" style="display:none"></div>`;
+    c.appendChild(div);
+    updateSecExtra(i);
+  }
+}
+function updateSecExtra(i){
+  const t=(document.getElementById('st-'+i)||{}).value;
+  const ex=document.getElementById('se-'+i);
+  if(!ex)return;
+  if(t==='drawers'||t==='combo'){
+    const pc=(document.getElementById('dc-'+i)||{}).value||'3';
+    const ph=(document.getElementById('dh-'+i)||{}).value||'5';
+    ex.style.display='flex';
+    ex.innerHTML=`<label>Cajones:</label>
+      <input type="number" id="dc-${i}" value="${pc}" min="1" max="8" style="width:52px" oninput="onChange()">
+      <label>H frente:</label>
+      <select id="dh-${i}" style="width:65px" onchange="onChange()">
+        ${[5,7,10].map(h=>`<option value="${h}"${ph==h?' selected':''}>${h}"</option>`).join('')}
+      </select>`;
+  }else{
+    ex.style.display='none';
+    ex.innerHTML='';
+  }
+}
+function onSecType(i){updateSecExtra(i);onChange()}
+function onNChange(){buildSecUI();onChange()}
+
+// ═══════════════════════════════
+// MAIN CALCULATION
+// ═══════════════════════════════
+function calculate(){
+  const W=parseIn(gv('iW')),H=parseIn(gv('iH')),D=parseIn(gv('iD'));
+  const T=parseIn(gv('iT'));
+  const mnt=gr('mnt');
+  const ceil=gc('iCeil');
+  const SH=ceil?H:parseIn(gv('iSH'));
+  const SS=parseIn(gv('iSS'))||11;
+  const ZS=parseIn(gv('iZS'))||8;
+  const SC=parseIn(gv('iSC'))||1/16;
+  const DSC=parseIn(gv('iDSC'))||1;
+  const DDC=parseIn(gv('iDDC'))||2;
+  const RC=parseIn(gv('iRC'))||2;
+  const topS=gc('iTopS');
+  const N=Math.min(parseInt(gv('iN'))||1,20);
+
+  if([W,H,D,T,SH].some(isNaN))return{err:'Revisar entradas: hay valores no válidos.'};
+
+  const warns=[];
+  const baseH=mnt==='floor'?3.5:3.5; // toe kick or wall rail height
+  const sysH=Math.min(SH,H);
+  if(SH>H)warns.push('Alto del sistema ajustado al alto de la pared.');
+  const usable=sysH-baseH;
+
+  const nPanels=N+1;
+  const panelTot=nPanels*T;
+  const secTot=W-panelTot;
+  if(secTot<=0)return{err:'Los paneles suman más que el ancho total. Reducir espesor o cantidad de secciones.'};
+  const SW=secTot/N; // section width (clear)
+
+  if(SW>36)warns.push(`Sección de ${toFrac(SW)}" es mayor a 36" — el estante puede combarse. Agregar más secciones.`);
+  if(SW<12)warns.push(`Sección de ${toFrac(SW)}" es menor a 12" — muy angosta.`);
+
+  const steps=[
+    `Ancho total (total width):         ${toFrac(W)}  [${toMM(W)} mm]`,
+    `Paneles: ${nPanels} × ${toFrac(T)}" =              −${toFrac(panelTot)}  [${toMM(panelTot)} mm]`,
+    `Ancho neto disponible:             ${toFrac(secTot)}  [${toMM(secTot)} mm]`,
+    `÷ ${N} secciones`,
+    `= ${toFrac(SW)} c/u  [${toMM(SW)} mm]`,
+  ];
+
+  // Panel left-edge positions from wall left
+  const panPos=Array.from({length:nPanels},(_,i)=>i*(SW+T));
+
+  const sTypes=getSectionTypes();
+  const sections=[];
+  const cutList=[];
+
+  // Top shelf
+  if(topS){
+    const tw=W-2*T;
+    cutList.push({piece:'Estante superior corrido (top shelf)',qty:1,L:toFrac(tw),Wi:toFrac(D-1),Tk:toFrac(T),Lmm:toMM(tw)});
+  }
+  // Vertical panels
+  for(let i=0;i<nPanels;i++){
+    cutList.push({piece:`Panel vertical ${i+1} (panel)`,qty:1,L:toFrac(usable),Wi:toFrac(D),Tk:toFrac(T),Lmm:toMM(usable)});
+  }
+
+  for(let i=0;i<N;i++){
+    const type=sTypes[i]||'shelves';
+    const cfg=getSecCfg(i);
+    const shelfW=SW-SC; // adjustable shelf width
+    const sec={i,type,SW,rods:[],shelves:[],drawers:[],rows:[],warns:[]};
+    sec.rows.push({l:'Ancho libre (clear width)',v:SW});
+
+    if(type==='double'){
+      const r1=82,r2=41;
+      if(usable<r1+2)sec.warns.push('Alto insuficiente para barra doble (necesita ≥84")');
+      sec.rods=[{h:r1,lbl:'Barra superior (top rod)'},{h:r2,lbl:'Barra inferior (bottom rod)'}];
+      sec.rows.push({l:'Barra superior @ 82" desde piso',v:shelfW});
+      sec.rows.push({l:'Barra inferior @ 41" desde piso',v:shelfW});
+      cutList.push({piece:`Barra sup. sec.${i+1} (top rod)`,qty:1,L:toFrac(shelfW),Wi:'1" ø',Tk:'—',Lmm:toMM(shelfW)});
+      cutList.push({piece:`Barra inf. sec.${i+1} (bottom rod)`,qty:1,L:toFrac(shelfW),Wi:'1" ø',Tk:'—',Lmm:toMM(shelfW)});
+    }
+    else if(type==='long'){
+      const rh=68;
+      sec.rods=[{h:rh,lbl:'Barra ropa larga (long hang rod)'}];
+      sec.rows.push({l:'Barra @ 68" desde piso',v:shelfW});
+      cutList.push({piece:`Barra larga sec.${i+1} (long rod)`,qty:1,L:toFrac(shelfW),Wi:'1" ø',Tk:'—',Lmm:toMM(shelfW)});
+    }
+    else if(type==='medium'){
+      const rh=72;
+      const shAbove=rh+RC+T; // shelf above rod bottom
+      sec.rods=[{h:rh,lbl:'Barra media (medium hang rod)'}];
+      sec.shelves=[{h:shAbove,lbl:'Estante sobre barra'}];
+      sec.rows.push({l:'Barra @ 72" desde piso',v:shelfW});
+      sec.rows.push({l:'Estante sobre barra',v:shelfW});
+      cutList.push({piece:`Barra media sec.${i+1} (rod)`,qty:1,L:toFrac(shelfW),Wi:'1" ø',Tk:'—',Lmm:toMM(shelfW)});
+      cutList.push({piece:`Estante sobre barra sec.${i+1}`,qty:1,L:toFrac(shelfW),Wi:toFrac(D-1),Tk:toFrac(T),Lmm:toMM(shelfW)});
+    }
+    else if(type==='shelves'){
+      let pos=SS;
+      while(pos+SS/2<usable){
+        sec.shelves.push({h:pos,lbl:`Estante @ ${toFrac(pos)}"`});
+        cutList.push({piece:`Estante sec.${i+1} @ ${toFrac(baseH+pos)}" (shelf)`,qty:1,L:toFrac(shelfW),Wi:toFrac(D-1),Tk:toFrac(T),Lmm:toMM(shelfW)});
+        pos+=SS;
+      }
+      if(sec.shelves.length)sec.rows.push({l:`${sec.shelves.length} estantes, separación ${toFrac(SS)}"`,v:shelfW});
+    }
+    else if(type==='shoe'){
+      let pos=ZS;
+      while(pos+ZS/2<usable){
+        sec.shelves.push({h:pos,lbl:`Repisa zapatero @ ${toFrac(pos)}"`});
+        cutList.push({piece:`Repisa zapatero sec.${i+1} #${sec.shelves.length} (shoe shelf)`,qty:1,L:toFrac(shelfW),Wi:toFrac(D-1),Tk:toFrac(T),Lmm:toMM(shelfW)});
+        pos+=ZS;
+      }
+      if(sec.shelves.length)sec.rows.push({l:`${sec.shelves.length} repisas zapatero, sep. ${toFrac(ZS)}"`,v:shelfW});
+    }
+    else if(type==='drawers'||type==='combo'){
+      const{drwCount:dc,drwFH:fh}=cfg;
+      const bxW=SW-DSC;
+      const bxD=D-DDC;
+      const bxH=fh-1;
+      let dh=0;
+      for(let d=0;d<dc;d++){
+        sec.drawers.push({hBot:dh,hTop:dh+fh,fh,bxW,bxD,bxH,lbl:`Cajón ${d+1}`});
+        cutList.push({piece:`Frente cajón sec.${i+1} #${d+1} (drawer front)`,qty:1,L:toFrac(SW),Wi:toFrac(fh),Tk:toFrac(T),Lmm:toMM(SW)});
+        cutList.push({piece:`Fondo cajón sec.${i+1} #${d+1} (drawer bottom)`,qty:1,L:toFrac(bxD),Wi:toFrac(bxW),Tk:'1/4"',Lmm:toMM(bxD)});
+        cutList.push({piece:`Lateral cajón sec.${i+1} #${d+1} (drawer side)×2`,qty:2,L:toFrac(bxD),Wi:toFrac(bxH),Tk:'1/2"',Lmm:toMM(bxD)});
+        cutList.push({piece:`Trasero cajón sec.${i+1} #${d+1} (drawer back)`,qty:1,L:toFrac(bxW),Wi:toFrac(bxH),Tk:'1/2"',Lmm:toMM(bxW)});
+        dh+=fh;
+      }
+      sec.rows.push({l:`${dc} cajón(es) × ${fh}" frente → caja ${toFrac(bxW)}" × ${toFrac(bxD)}"`,v:bxW});
+      if(type==='combo'){
+        const start=dc*fh+T;
+        let pos=start+SS;
+        while(pos+SS/2<usable){
+          sec.shelves.push({h:pos,lbl:`Estante combo @ ${toFrac(pos)}"`});
+          cutList.push({piece:`Estante combo sec.${i+1} @ ${toFrac(pos)}" (shelf)`,qty:1,L:toFrac(shelfW),Wi:toFrac(D-1),Tk:toFrac(T),Lmm:toMM(shelfW)});
+          pos+=SS;
+        }
+        if(sec.shelves.length)sec.rows.push({l:`${sec.shelves.length} estantes encima cajones`,v:shelfW});
+      }
+    }
+
+    if(sec.warns.length)warns.push(...sec.warns.map(w=>`Sección ${i+1}: ${w}`));
+    sections.push(sec);
+  }
+
+  // Verification
+  const checkSum=nPanels*T+N*SW;
+  if(Math.abs(checkSum-W)>0.001)warns.push(`Verificación: suma paneles+secciones = ${toFrac(checkSum)}" ≠ ${toFrac(W)}" (dif ${(checkSum-W).toFixed(4)}")`);
+
+  return{W,H,D,T,SH:sysH,baseH,usable,N,nPanels,panPos,SW,secTot,panelTot,
+         topS,SC,DSC,DDC,RC,SS,ZS,sections,cutList,warns,steps,sTypes,mnt};
+}
+
+// ═══════════════════════════════
+// RENDER RESULTS
+// ═══════════════════════════════
+function renderResults(r){
+  if(r.err){
+    document.getElementById('warns').innerHTML=`<div class="warn err">⛔ ${r.err}</div>`;
+    ['summary','secres','cutlist'].forEach(id=>document.getElementById(id).innerHTML='');
+    document.getElementById('elev-box').innerHTML='';
+    document.getElementById('plan-box').innerHTML='';
+    return;
+  }
+  document.getElementById('warns').innerHTML=r.warns.map(w=>`<div class="warn">⚠ ${w}</div>`).join('');
+
+  // Summary
+  let s=`<div class="r-block"><h3>Resumen</h3>
+    ${dimRow(r.W,'Ancho total (total width)')}
+    ${dimRow(r.SH,'Alto del sistema (system height)')}
+    ${dimRow(r.usable,'Alto útil (usable height)')}
+    ${dimRow(r.D,'Profundidad (depth)')}
+    ${dimRow(r.SW,'Ancho de sección (section width)')}
+    <div class="dr"><span class="dl">Secciones</span><span class="dv">${r.N}</span></div>
+    <div class="dr"><span class="dl">Paneles verticales</span><span class="dv">${r.nPanels}</span></div>
+  </div>`;
+
+  s+=`<div class="r-block"><h3>Paso a paso (step-by-step)</h3><div class="steps">${r.steps.join('\n')}</div></div>`;
+
+  let panHtml='<div class="r-block"><h3>Posición de paneles desde la izquierda (panel left edges)</h3>';
+  r.panPos.forEach((p,i)=>panHtml+=dimRow(p,`Panel ${i+1} — eje izquierdo`));
+  panHtml+='</div>';
+  document.getElementById('summary').innerHTML=s+panHtml;
+
+  // Per-section
+  let secHtml='';
+  r.sections.forEach((sec,i)=>{
+    const typeLbl=SEC_TYPES.find(t=>t.id===sec.type)?.lbl||sec.type;
+    secHtml+=`<div class="r-block"><h3>Sección ${i+1} — ${typeLbl}</h3>`;
+    sec.rows.forEach(row=>secHtml+=dimRow(row.v,row.l));
+    if(sec.warns.length)sec.warns.forEach(w=>secHtml+=`<div style="color:var(--err-txt);font-size:.75rem;padding:3px 0">⚠ ${w}</div>`);
+    secHtml+='</div>';
+  });
+  document.getElementById('secres').innerHTML=secHtml;
+
+  // Cut list
+  let cl='<div style="overflow-x:auto"><table class="cut-tbl"><thead><tr><th>Pieza (piece)</th><th>Qty</th><th>Largo (L)</th><th>Ancho (W)</th><th>Esp. (T)</th><th>L mm</th></tr></thead><tbody>';
+  r.cutList.forEach(it=>cl+=`<tr><td>${it.piece}</td><td style="text-align:center">${it.qty}</td><td>${it.L}</td><td>${it.Wi}</td><td>${it.Tk}</td><td>${it.Lmm}</td></tr>`);
+  cl+='</tbody></table></div>';
+  document.getElementById('cutlist').innerHTML=cl;
+
+  // Drawings
+  drawElevation(r);
+  drawPlan(r);
+}
+
+// ═══════════════════════════════
+// SVG ELEVATION
+// ═══════════════════════════════
+function drawElevation(r){
+  const sc=4; // px per inch
+  const mL=65,mR=35,mT=25,mB=55;
+  const svgW=r.W*sc+mL+mR;
+  const svgH=r.SH*sc+mT+mB;
+  const X=x=>mL+x*sc;
+  const Y=y=>mT+(r.SH-y)*sc; // y=0 at floor
+
+  let s=`<svg id="elev-svg" viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}">`;
+  s+=`<rect width="${svgW}" height="${svgH}" fill="white"/>`;
+
+  // Cabinet background
+  s+=`<rect x="${X(0)}" y="${Y(r.SH)}" width="${r.W*sc}" height="${r.SH*sc}" fill="#f0f0f0" stroke="#888" stroke-width="1.5"/>`;
+
+  // Base (toe kick / rail)
+  s+=`<rect x="${X(0)}" y="${Y(r.baseH)}" width="${r.W*sc}" height="${r.baseH*sc}" fill="#c8c8c8" stroke="#999" stroke-width="0.5"/>`;
+  s+=`<text x="${X(r.W/2)}" y="${Y(r.baseH/2)+4}" text-anchor="middle" font-size="8" fill="#777" font-family="sans-serif">${r.mnt==='floor'?'TOE KICK':'WALL RAIL'}</text>`;
+
+  // Top shelf
+  if(r.topS){
+    s+=`<rect x="${X(r.T)}" y="${Y(r.SH)}" width="${(r.W-2*r.T)*sc}" height="${r.T*sc}" fill="#b0b0b0" stroke="#888" stroke-width="0.5"/>`;
+  }
+
+  // Vertical panels
+  r.panPos.forEach(p=>{
+    s+=`<rect x="${X(p)}" y="${Y(r.SH)}" width="${r.T*sc}" height="${(r.SH-r.baseH)*sc}" fill="#aaa" stroke="#777" stroke-width="0.5"/>`;
+  });
+
+  // Sections content
+  r.sections.forEach((sec,i)=>{
+    const sx=r.panPos[i]+r.T;
+    // Shelves
+    sec.shelves.forEach(sh=>{
+      const absH=r.baseH+sh.h;
+      s+=`<rect x="${X(sx)}" y="${Y(absH+r.T)}" width="${sec.SW*sc}" height="${r.T*sc}" fill="#d4b896" stroke="#999" stroke-width="0.5"/>`;
+    });
+    // Rods
+    sec.rods.forEach(rod=>{
+      const ry=Y(rod.h);
+      s+=`<line x1="${X(sx+0.5)}" y1="${ry}" x2="${X(sx+sec.SW-0.5)}" y2="${ry}" stroke="#444" stroke-width="2.5" stroke-linecap="round"/>`;
+      s+=`<text x="${X(sx+sec.SW/2)}" y="${ry-3}" text-anchor="middle" font-size="6" fill="#555" font-family="sans-serif">ROD</text>`;
+    });
+    // Drawers
+    sec.drawers.forEach(drw=>{
+      const absBot=r.baseH+drw.hBot;
+      const drwH=drw.fh*sc;
+      s+=`<rect x="${X(sx+0.1)}" y="${Y(absBot+drw.fh)}" width="${(sec.SW-0.2)*sc}" height="${drwH}" fill="#e8d4b4" stroke="#999" stroke-width="0.5"/>`;
+      const hy=Y(absBot+drw.fh)+drwH/2;
+      s+=`<line x1="${X(sx+sec.SW*0.3)}" y1="${hy}" x2="${X(sx+sec.SW*0.7)}" y2="${hy}" stroke="#888" stroke-width="1.5"/>`;
+    });
+    // Section number
+    s+=`<text x="${X(sx+sec.SW/2)}" y="${Y(0.3)}" text-anchor="middle" font-size="9" fill="#aaa" font-family="sans-serif">${i+1}</text>`;
+  });
+
+  // ─── DIMENSIONS ───
+  const dStroke='#333';
+  const dFont='font-family="sans-serif" font-size="8" fill="#333"';
+
+  // Total width (bottom)
+  const dwY=svgH-14;
+  s+=dimLine(X(0),dwY,X(r.W),dwY,dStroke);
+  s+=`<text x="${(X(0)+X(r.W))/2}" y="${dwY-5}" text-anchor="middle" ${dFont}>${toFrac(r.W)}</text>`;
+
+  // Section widths (above total width line)
+  const dwY2=svgH-28;
+  r.sections.forEach((sec,i)=>{
+    const sx=r.panPos[i]+r.T;
+    s+=`<line x1="${X(sx)}" y1="${dwY2}" x2="${X(sx+sec.SW)}" y2="${dwY2}" stroke="#888" stroke-width="0.6" stroke-dasharray="3,2"/>`;
+    s+=`<line x1="${X(sx)}" y1="${dwY2-3}" x2="${X(sx)}" y2="${dwY2+3}" stroke="#888" stroke-width="0.6"/>`;
+    s+=`<line x1="${X(sx+sec.SW)}" y1="${dwY2-3}" x2="${X(sx+sec.SW)}" y2="${dwY2+3}" stroke="#888" stroke-width="0.6"/>`;
+    s+=`<text x="${X(sx+sec.SW/2)}" y="${dwY2-5}" text-anchor="middle" font-family="sans-serif" font-size="7" fill="#888">${toFrac(sec.SW)}</text>`;
+  });
+
+  // Total height (left)
+  const dhX=mL-18;
+  s+=dimLine(dhX,Y(0),dhX,Y(r.SH),dStroke);
+  const midY=(Y(0)+Y(r.SH))/2;
+  s+=`<text x="${dhX-5}" y="${midY}" text-anchor="middle" ${dFont} transform="rotate(-90,${dhX-5},${midY})">${toFrac(r.SH)}</text>`;
+
+  // Height annotations for rods on right side
+  const annotX=X(r.W)+6;
+  r.sections.forEach(sec=>{
+    sec.rods.forEach(rod=>{
+      s+=`<text x="${annotX}" y="${Y(rod.h)+3}" font-size="6" fill="#666" font-family="sans-serif">${toFrac(rod.h)}"</text>`;
+    });
+  });
+  // Base height annotation
+  s+=`<text x="${annotX}" y="${Y(r.baseH)+3}" font-size="6" fill="#888" font-family="sans-serif">${toFrac(r.baseH)}"</text>`;
+
+  s+='</svg>';
+  document.getElementById('elev-box').innerHTML=s;
+}
+
+function dimLine(x1,y1,x2,y2,color){
+  const isH=Math.abs(y2-y1)<Math.abs(x2-x1);
+  let r=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="0.8"/>`;
+  if(isH){
+    r+=`<line x1="${x1}" y1="${y1-4}" x2="${x1}" y2="${y1+4}" stroke="${color}" stroke-width="0.8"/>`;
+    r+=`<line x1="${x2}" y1="${y2-4}" x2="${x2}" y2="${y2+4}" stroke="${color}" stroke-width="0.8"/>`;
+  }else{
+    r+=`<line x1="${x1-4}" y1="${y1}" x2="${x1+4}" y2="${y1}" stroke="${color}" stroke-width="0.8"/>`;
+    r+=`<line x1="${x2-4}" y1="${y2}" x2="${x2+4}" y2="${y2}" stroke="${color}" stroke-width="0.8"/>`;
+  }
+  return r;
+}
+
+// ═══════════════════════════════
+// SVG PLAN VIEW
+// ═══════════════════════════════
+function drawPlan(r){
+  const sc=4;
+  const mL=55,mR=25,mT=20,mB=40;
+  const svgW=r.W*sc+mL+mR;
+  const svgH=r.D*sc+mT+mB;
+  const X=x=>mL+x*sc;
+  const Y=y=>mT+y*sc;
+  const dFont='font-family="sans-serif" font-size="8" fill="#333"';
+
+  let s=`<svg id="plan-svg" viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}">`;
+  s+=`<rect width="${svgW}" height="${svgH}" fill="white"/>`;
+  s+=`<rect x="${X(0)}" y="${Y(0)}" width="${r.W*sc}" height="${r.D*sc}" fill="#f0f0f0" stroke="#888" stroke-width="1.5"/>`;
+
+  // Wall (back) hatching
+  s+=`<rect x="${X(0)}" y="${Y(0)}" width="${r.W*sc}" height="4" fill="#bbb"/>`;
+  s+=`<text x="${X(r.W/2)}" y="${Y(0)+11}" text-anchor="middle" font-size="7" fill="#666" font-family="sans-serif">WALL</text>`;
+
+  // Vertical panels (top view)
+  r.panPos.forEach(p=>{
+    s+=`<rect x="${X(p)}" y="${Y(0)}" width="${r.T*sc}" height="${r.D*sc}" fill="#aaa" stroke="#777" stroke-width="0.5"/>`;
+  });
+
+  // Section numbers
+  r.sections.forEach((sec,i)=>{
+    const sx=r.panPos[i]+r.T;
+    s+=`<text x="${X(sx+sec.SW/2)}" y="${Y(r.D/2)+4}" text-anchor="middle" font-size="10" fill="#bbb" font-family="sans-serif">${i+1}</text>`;
+  });
+
+  // Dimensions: width
+  const dwY=svgH-12;
+  s+=dimLine(X(0),dwY,X(r.W),dwY,'#333');
+  s+=`<text x="${(X(0)+X(r.W))/2}" y="${dwY-5}" text-anchor="middle" ${dFont}>${toFrac(r.W)}</text>`;
+
+  // Depth
+  const dhX=mL-15;
+  s+=dimLine(dhX,Y(0),dhX,Y(r.D),'#333');
+  const my=(Y(0)+Y(r.D))/2;
+  s+=`<text x="${dhX-5}" y="${my}" text-anchor="middle" ${dFont} transform="rotate(-90,${dhX-5},${my})">${toFrac(r.D)}"</text>`;
+
+  s+='</svg>';
+  document.getElementById('plan-box').innerHTML=s;
+}
+
+// ═══════════════════════════════
+// TOOLS
+// ═══════════════════════════════
+function switchTool(id,btn){
+  document.querySelectorAll('.tp').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.t-tabs button').forEach(b=>b.classList.remove('on'));
+  document.getElementById('tp-'+id).classList.add('on');
+  btn.classList.add('on');
+}
+
+function convFrom(src){
+  const ei=document.getElementById('cv-in');
+  const ef=document.getElementById('cv-ft');
+  const em=document.getElementById('cv-mm');
+  let inches;
+  if(src==='in')inches=parseIn(ei.value);
+  else if(src==='ft')inches=parseIn(ef.value);
+  else inches=parseFloat(em.value)/25.4;
+  if(isNaN(inches))return;
+  if(src!=='in')ei.value=inches.toFixed(5).replace(/\.?0+$/,'');
+  if(src!=='ft')ef.value=toFrac(inches);
+  if(src!=='mm')em.value=(inches*25.4).toFixed(2);
+}
+
+function renderAddends(){
+  const c=document.getElementById('addends');
+  c.innerHTML=addRows.map((a,i)=>`
+    <div class="add-row">
+      <span class="add-op">${a.op}</span>
+      <input type="text" inputmode="decimal" placeholder='5\' 7 3/8"' value="${a.v}"
+        oninput="addRows[${i}].v=this.value;calcAdd()">
+      <button class="xs" onclick="addRows.splice(${i},1);renderAddends();calcAdd()">✕</button>
+    </div>`).join('');
+  calcAdd();
+}
+function addAddend(op){addRows.push({op,v:''});renderAddends()}
+function clearAdd(){addRows=[{op:'+',v:''},{op:'+',v:''}];renderAddends()}
+function calcAdd(){
+  let tot=0;
+  addRows.forEach(a=>{const v=parseIn(a.v);if(!isNaN(v))tot+=a.op==='+'?v:-v});
+  document.getElementById('add-res').textContent=addRows.some(a=>a.v)?toFrac(tot)+'  ('+toMM(tot)+' mm)':'';
+}
+
+function buildFracTable(){
+  const tb=document.getElementById('frac-body');
+  const rows=[];
+  for(let n=1;n<=16;n++){
+    const[sn,sd]=simplify(n,16);
+    const dec=n/16;
+    rows.push(`<tr><td>${sn}/${sd}"</td><td>${dec.toFixed(5).replace(/0+$/,'')}</td><td>${(dec*25.4).toFixed(3)}</td></tr>`);
+  }
+  tb.innerHTML=rows.join('');
+}
+
+// ═══════════════════════════════
+// UTILITIES
+// ═══════════════════════════════
+function cp(text){
+  navigator.clipboard?.writeText(text).then(()=>toast('Copiado ✓'));
+}
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('on');
+  setTimeout(()=>t.classList.remove('on'),2000);
+}
+function copyCutList(){
+  if(!R.cutList)return;
+  const lines=['Pieza\tQty\tLargo\tAncho\tEspesor\tL_mm'];
+  R.cutList.forEach(it=>lines.push([it.piece,it.qty,it.L,it.Wi,it.Tk,it.Lmm].join('\t')));
+  cp(lines.join('\n'));toast('Lista copiada');
+}
+function exportCSV(){
+  if(!R.cutList)return;
+  const lines=['Pieza,Qty,Largo,Ancho,Espesor,L_mm'];
+  R.cutList.forEach(it=>lines.push([`"${it.piece}"`,it.qty,`"${it.L}"`,`"${it.Wi}"`,`"${it.Tk}"`,it.Lmm].join(',')));
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));
+  a.download='closet-cut-list.csv';a.click();
+}
+function dlSVG(id){
+  const el=document.getElementById(id+'-svg');
+  if(!el)return;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(el)],{type:'image/svg+xml'}));
+  a.download=`closet-${id}.svg`;a.click();
+}
+
+// ═══════════════════════════════
+// AUTO SECTIONS
+// ═══════════════════════════════
+function autoSections(){
+  const W=parseIn(gv('iW')),T=parseIn(gv('iT'));
+  if(isNaN(W)||isNaN(T))return;
+  for(let n=2;n<=20;n++){
+    const sw=(W-(n+1)*T)/n;
+    if(sw>=18&&sw<=36){document.getElementById('iN').value=n;buildSecUI();onChange();return}
+  }
+  for(let n=1;n<=20;n++){
+    const sw=(W-(n+1)*T)/n;
+    if(sw<=36){document.getElementById('iN').value=n;buildSecUI();onChange();return}
+  }
+}
+
+// ═══════════════════════════════
+// ACCORDION (mobile)
+// ═══════════════════════════════
+function accToggle(btn,bodyId){
+  if(window.innerWidth>599)return;
+  const body=document.getElementById(bodyId);
+  const open=body.classList.contains('open');
+  body.classList.toggle('open',!open);
+  body.style.display=open?'none':'block';
+  btn.classList.toggle('open',!open);
+}
+
+// ═══════════════════════════════
+// STORAGE
+// ═══════════════════════════════
+const SK='closet-v2';
+function save(){
+  try{
+    localStorage.setItem(SK,JSON.stringify({
+      iW:gv('iW'),iH:gv('iH'),iD:gv('iD'),iT:gv('iT'),
+      iSH:gv('iSH'),iN:gv('iN'),iSS:gv('iSS'),iZS:gv('iZS'),
+      iSC:gv('iSC'),iDSC:gv('iDSC'),iDDC:gv('iDDC'),iRC:gv('iRC'),
+      mnt:gr('mnt'),topS:gc('iTopS'),ceil:gc('iCeil'),
+      sTypes:getSectionTypes(),
+    }));
+  }catch(e){}
+}
+function load(){
+  try{
+    const d=JSON.parse(localStorage.getItem(SK)||'{}');
+    const set=(id,v)=>{if(v!==undefined&&v!==null&&document.getElementById(id))document.getElementById(id).value=v};
+    ['iW','iH','iD','iT','iSH','iN','iSS','iZS','iSC','iDSC','iDDC','iRC'].forEach(id=>set(id,d[id]));
+    if(d.mnt){const r=document.querySelector(`input[name="mnt"][value="${d.mnt}"]`);if(r)r.checked=true}
+    if(d.topS!==undefined&&document.getElementById('iTopS'))document.getElementById('iTopS').checked=d.topS;
+    if(d.ceil!==undefined&&document.getElementById('iCeil'))document.getElementById('iCeil').checked=d.ceil;
+    // section types restored after buildSecUI via prev[] cache
+  }catch(e){}
+}
+
+// ═══════════════════════════════
+// RESET
+// ═══════════════════════════════
+function resetDefaults(){
+  ['iW','iH','iD','iT','iSH','iN','iSS','iZS','iSC','iDSC','iDDC','iRC'].forEach(id=>{
+    const defaults={iW:'96',iH:'96',iD:'14',iT:'3/4',iSH:'84',iN:'3',iSS:'11',iZS:'8',iSC:'1/16',iDSC:'1',iDDC:'2',iRC:'2'};
+    if(document.getElementById(id))document.getElementById(id).value=defaults[id];
+  });
+  document.querySelector('input[name="mnt"][value="floor"]').checked=true;
+  document.getElementById('iTopS').checked=true;
+  document.getElementById('iCeil').checked=false;
+  buildSecUI();onChange();
+}
+
+// ═══════════════════════════════
+// MAIN FLOW
+// ═══════════════════════════════
+function onChange(){
+  document.getElementById('iSH').disabled=gc('iCeil');
+  R=calculate();
+  renderResults(R);
+  save();
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  load();
+  buildSecUI();
+  buildFracTable();
+  renderAddends();
+  onChange();
+
+  // Mobile: collapse non-essential panels by default
+  if(window.innerWidth<=599){
+    ['acc-res','acc-drw','acc-tls'].forEach(id=>{
+      const b=document.getElementById(id);
+      if(b){b.classList.remove('open');b.style.display='none'}
+      const btn=b?.previousElementSibling;
+      if(btn)btn.classList.remove('open');
+    });
+  }
+});
+</script>
+</body>
+</html>
